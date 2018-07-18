@@ -8,8 +8,13 @@ import (
 )
 
 func TestCreateContainer(t *testing.T) {
+	name := "test-container"
+	_, err := getContainer(name)
+	if err == nil {
+		return
+	}
 	req := api.ContainersPost{
-		Name: "test-container",
+		Name: name,
 		Source: api.ContainerSource{
 			Type:     "image",
 			Protocol: "simplestreams",
@@ -18,11 +23,9 @@ func TestCreateContainer(t *testing.T) {
 		},
 	}
 	op, err := createContainer(req)
-	if assert.NotNil(t, err) && assert.Equal(t, err.Error(), "Get http://unix.socket/1.0: dial unix /var/lib/lxd/unix.socket: connect: no such file or directory", "They should be equal") {
-		return
-	}
+	assert.Nil(t, err)
 
-	if assert.NotNil(t, op) {
+	if assert.Nil(t, op) {
 		assert.Equal(t, op.Get().Status, "Running", "They should be equal")
 	}
 }
