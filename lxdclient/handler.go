@@ -19,6 +19,10 @@ type createContainerRequestData struct {
 	Alias    string `json:"alias,omitempty"`
 }
 
+type deleteContainerRequestData struct {
+	Name string `json:"name,omitempty"`
+}
+
 // GetContainersHandler ...
 func (h *Handler) GetContainersHandler(w http.ResponseWriter, r *http.Request) {
 	containers, err := getContainers()
@@ -62,6 +66,25 @@ func (h *Handler) CreateContainerHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	op, err := createContainer(request)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, op)
+	return
+}
+
+// DeleteContainerHandler ...
+func (h *Handler) DeleteContainerHandler(w http.ResponseWriter, r *http.Request) {
+	var data deleteContainerRequestData
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+	op, err := deleteContainer(data.Name)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return

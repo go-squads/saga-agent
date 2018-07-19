@@ -31,6 +31,8 @@ func (suite *HandlerSuite) SetupSuite() {
 		},
 	}
 	createContainer(req)
+	req.Name = "test-container-13"
+	createContainer(req)
 }
 
 func (suite *HandlerSuite) TearDownSuite() {
@@ -73,6 +75,20 @@ func (suite *HandlerSuite) TestCreateContainerHandler() {
 	rr := httptest.NewRecorder()
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/container", handler.CreateContainerHandler)
+	router.ServeHTTP(rr, req)
+	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
+}
+
+func (suite *HandlerSuite) TestDeleteContainerHandler() {
+	payload := []byte(`{"name":"test-container-13"}`)
+	req, err := http.NewRequest("DELETE", "/api/v1/container", bytes.NewBuffer(payload))
+	if err != nil {
+		suite.Fail(err.Error())
+	}
+
+	rr := httptest.NewRecorder()
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/container", handler.DeleteContainerHandler)
 	router.ServeHTTP(rr, req)
 	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
 }

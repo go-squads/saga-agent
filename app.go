@@ -26,4 +26,5 @@ func (a *App) Initialize() {
 	a.Router.HandleFunc("/api/v1/containers", handler.GetContainersHandler).Methods("GET")
 	a.Router.HandleFunc("/api/v1/container/{name}", handler.GetContainerHandler).Methods("GET")
 	a.Router.HandleFunc("/api/v1/container", handler.CreateContainerHandler).Methods("POST")
+	a.Router.HandleFunc("/api/v1/container", handler.CreateContainerHandler).Methods("DELETE")
 }
