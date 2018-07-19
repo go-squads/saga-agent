@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
+	"github.com/lxc/lxd/shared/api"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -20,22 +22,41 @@ func TestHandlerSuite(t *testing.T) {
 
 func (suite *HandlerSuite) SetupSuite() {
 	handler = Handler{}
+	name := "test-container-11"
+	req := api.ContainersPost{
+		Name: name,
+		Source: api.ContainerSource{
+			Type: "none",
+		},
+	}
+	createContainer(req)
 }
 
 func (suite *HandlerSuite) TearDownSuite() {
-
+	deleteContainer("test-container-11")
 }
 
-func (suite *HandlerSuite) TestGetContainerHandler() {
+func (suite *HandlerSuite) TestGetContainersHandler() {
 	req, err := http.NewRequest("GET", "/api/v1/containers", nil)
 	if err != nil {
 		suite.Fail(err.Error())
 	}
 
 	rr := httptest.NewRecorder()
-
-	handler := http.HandlerFunc(handler.GetContainersHadler)
+	handler := http.HandlerFunc(handler.GetContainersHandler)
 	handler.ServeHTTP(rr, req)
+	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
+}
 
+func (suite *HandlerSuite) TestGetContainerHandler() {
+	req, err := http.NewRequest("GET", "/api/v1/container/test-container-11", nil)
+	if err != nil {
+		suite.Fail(err.Error())
+	}
+
+	rr := httptest.NewRecorder()
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/container/{name}", handler.GetContainerHandler)
+	router.ServeHTTP(rr, req)
 	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
 }
