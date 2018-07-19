@@ -19,6 +19,10 @@ func init() {
 	}
 }
 
+func TestContainerSuite(t *testing.T) {
+	suite.Run(t, new(ContainerSuite))
+}
+
 func (suite *ContainerSuite) SetupSuite() {
 	deleteContainer("test-container-1")
 	deleteContainer("test-container-2")
@@ -98,6 +102,8 @@ func (suite *ContainerSuite) TestGetContainerFailed() {
 	suite.Nil(container, "They should be nil")
 }
 
-func TestContainerSuite(t *testing.T) {
-	suite.Run(t, new(ContainerSuite))
+func (suite *ContainerSuite) TestGetContainersSuccessful() {
+	containers, err := getContainers()
+	suite.NoError(err, "They should be no error")
+	suite.NotEqual(0, len(containers), "They should be not equal")
 }

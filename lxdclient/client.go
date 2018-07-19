@@ -35,3 +35,7 @@ func deleteContainer(name string) (op lxd.Operation, err error) {
 	}
 	return op, nil
 }
+
+func getContainers() (containers []api.Container, err error) {
+	return client.GetContainers()
+}
