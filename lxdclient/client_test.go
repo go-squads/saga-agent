@@ -49,15 +49,21 @@ func (suite *ContainerSuite) SetupSuite() {
 func (suite *ContainerSuite) TearDownSuite() {
 	deleteContainer("test-container-1")
 	deleteContainer("test-container-2")
+	deleteContainer("test-container-4")
 }
 
 func (suite *ContainerSuite) TestDeleteContainerSuccessful() {
 	op, err := deleteContainer("test-container-3")
-	suite.Nil(err, "They should be nil")
+	suite.NoError(err, "They should be no error")
 
 	if suite.NotNil(op, "They should be not nil") {
 		suite.Equal(api.Running, op.Get().StatusCode, "They should be equal")
 	}
+}
+
+func (suite *ContainerSuite) TestDeleteContainerFailed() {
+	_, err := deleteContainer("")
+	suite.Error(err, "They should be error")
 }
 
 func (suite *ContainerSuite) TestCreateContainerSuccessful() {
@@ -106,4 +112,21 @@ func (suite *ContainerSuite) TestGetContainersSuccessful() {
 	containers, err := getContainers()
 	suite.NoError(err, "They should be no error")
 	suite.NotEqual(0, len(containers), "They should be not equal")
+}
+
+func (suite *ContainerSuite) TestGetInfoSuccessful() {
+	name := "test-container-4"
+	req := api.ContainersPost{
+		Name:   name,
+		Source: source,
+	}
+	result, _ := createContainer(req)
+	op, err := getOperationInfo(result.Get().ID)
+	suite.NoError(err, "They should be no error")
+	suite.Equal(result.Get().ID, op.ID, "They should be equal")
+}
+
+func (suite *ContainerSuite) TestGetInfoFailed() {
+	_, err := getOperationInfo("")
+	suite.Error(err, "They should be error")
 }

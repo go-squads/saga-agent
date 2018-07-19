@@ -39,3 +39,11 @@ func deleteContainer(name string) (op lxd.Operation, err error) {
 func getContainers() (containers []api.Container, err error) {
 	return client.GetContainers()
 }
+
+func getOperationInfo(ID string) (op *api.Operation, err error) {
+	op, _, err = client.GetOperation(ID)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
