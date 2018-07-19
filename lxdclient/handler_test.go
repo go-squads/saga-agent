@@ -1,6 +1,7 @@
 package lxdclient
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -34,6 +35,7 @@ func (suite *HandlerSuite) SetupSuite() {
 
 func (suite *HandlerSuite) TearDownSuite() {
 	deleteContainer("test-container-11")
+	deleteContainer("test-container-12")
 }
 
 func (suite *HandlerSuite) TestGetContainersHandler() {
@@ -57,6 +59,20 @@ func (suite *HandlerSuite) TestGetContainerHandler() {
 	rr := httptest.NewRecorder()
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/container/{name}", handler.GetContainerHandler)
+	router.ServeHTTP(rr, req)
+	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
+}
+
+func (suite *HandlerSuite) TestCreateContainerHandler() {
+	payload := []byte(`{"name":"test-container-12","type":"none"}`)
+	req, err := http.NewRequest("POST", "/api/v1/container", bytes.NewBuffer(payload))
+	if err != nil {
+		suite.Fail(err.Error())
+	}
+
+	rr := httptest.NewRecorder()
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/container", handler.CreateContainerHandler)
 	router.ServeHTTP(rr, req)
 	suite.Equal(http.StatusOK, rr.Code, "They should be equal")
 }
