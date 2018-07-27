@@ -8,6 +8,7 @@ This is the LXD agent for creating new LXC
 4. LXD 3.0.x
 5. Testify : https://github.com/stretchr/testify
 6. LXD client :   https://github.com/lxc/lxd/tree/master/client 
+7. gorilla/mux : https://github.com/gorilla/mux
 
 ## Running the Program
 ```
