@@ -10,12 +10,16 @@ This is the LXD agent for creating new LXC
 6. LXD client :   https://github.com/lxc/lxd/tree/master/client 
 7. gorilla/mux : https://github.com/gorilla/mux
 
-## Running the Program
-```
-$ 
-```
-
 ## Running the Tests
 ```
 $ go test
+```
+
+## Installing the Program
+```
+$ go install
+```
+## Running the Program
+```
+$ saga-agent
 ```
