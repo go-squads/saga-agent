@@ -9,7 +9,9 @@ import (
 )
 
 // Handler ...
-type Handler struct{}
+type Handler struct {
+	client LxdClient
+}
 
 type createContainerRequestData struct {
 	Name     string `json:"name,omitempty"`
@@ -19,13 +21,18 @@ type createContainerRequestData struct {
 	Alias    string `json:"alias,omitempty"`
 }
 
+type RequestUpdateStateContainer struct {
+	Name  string                `json:"name"`
+	State api.ContainerStatePut `json:"state"`
+}
+
 type deleteContainerRequestData struct {
 	Name string `json:"name,omitempty"`
 }
 
 // GetContainersHandler ...
 func (h *Handler) GetContainersHandler(w http.ResponseWriter, r *http.Request) {
-	containers, err := getContainers()
+	containers, err := h.client.getContainers()
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -37,7 +44,7 @@ func (h *Handler) GetContainersHandler(w http.ResponseWriter, r *http.Request) {
 // GetContainerHandler ...
 func (h *Handler) GetContainerHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	container, err := getContainer(vars["name"])
+	container, err := h.client.getContainer(vars["name"])
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -65,7 +72,7 @@ func (h *Handler) CreateContainerHandler(w http.ResponseWriter, r *http.Request)
 		},
 	}
 
-	op, err := createContainer(request)
+	op, err := h.client.createContainer(request)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -84,7 +91,28 @@ func (h *Handler) DeleteContainerHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer r.Body.Close()
-	op, err := deleteContainer(data.Name)
+	op, err := h.client.deleteContainer(data.Name)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, op)
+	return
+}
+
+// UpdateStateContainerHandler ...
+func (h *Handler) UpdateStateContainerHandler(w http.ResponseWriter, r *http.Request) {
+	var data RequestUpdateStateContainer
+	decoder := json.NewDecoder(r.Body)
+
+	if err := decoder.Decode(&data); err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	op, err := h.client.updateContainerState(data.Name, data.State)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return

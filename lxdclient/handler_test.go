@@ -23,6 +23,7 @@ func TestHandlerSuite(t *testing.T) {
 
 func (suite *HandlerSuite) SetupSuite() {
 	handler = Handler{}
+	handler.client.init()
 	name := "test-container-11"
 	req := api.ContainersPost{
 		Name: name,
@@ -30,14 +31,14 @@ func (suite *HandlerSuite) SetupSuite() {
 			Type: "none",
 		},
 	}
-	createContainer(req)
+	handler.client.createContainer(req)
 	req.Name = "test-container-13"
-	createContainer(req)
+	handler.client.createContainer(req)
 }
 
 func (suite *HandlerSuite) TearDownSuite() {
-	deleteContainer("test-container-11")
-	deleteContainer("test-container-12")
+	handler.client.deleteContainer("test-container-11")
+	handler.client.deleteContainer("test-container-12")
 }
 
 func (suite *HandlerSuite) TestGetContainersHandler() {
