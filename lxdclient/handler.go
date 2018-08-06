@@ -10,7 +10,7 @@ import (
 
 // Handler ...
 type Handler struct {
-	client LxdClient
+	HandlerClient Client
 }
 
 type createContainerRequestData struct {
@@ -32,7 +32,7 @@ type deleteContainerRequestData struct {
 
 // GetContainersHandler ...
 func (h *Handler) GetContainersHandler(w http.ResponseWriter, r *http.Request) {
-	containers, err := h.client.getContainers()
+	containers, err := h.HandlerClient.GetContainers()
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -44,7 +44,7 @@ func (h *Handler) GetContainersHandler(w http.ResponseWriter, r *http.Request) {
 // GetContainerHandler ...
 func (h *Handler) GetContainerHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	container, err := h.client.getContainer(vars["name"])
+	container, err := h.HandlerClient.GetContainer(vars["name"])
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -72,7 +72,7 @@ func (h *Handler) CreateContainerHandler(w http.ResponseWriter, r *http.Request)
 		},
 	}
 
-	op, err := h.client.createContainer(request)
+	op, err := h.HandlerClient.CreateContainer(request)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -91,7 +91,7 @@ func (h *Handler) DeleteContainerHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer r.Body.Close()
-	op, err := h.client.deleteContainer(data.Name)
+	op, err := h.HandlerClient.DeleteContainer(data.Name)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -112,7 +112,7 @@ func (h *Handler) UpdateStateContainerHandler(w http.ResponseWriter, r *http.Req
 	}
 	defer r.Body.Close()
 
-	op, err := h.client.updateContainerState(data.Name, data.State)
+	op, err := h.HandlerClient.UpdateContainerState(data.Name, data.State)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return

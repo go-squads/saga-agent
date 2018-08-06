@@ -25,11 +25,11 @@ func TestContainerSuite(t *testing.T) {
 }
 
 func (suite *ContainerSuite) SetupSuite() {
-	lxdClient.init()
-	lxdClient.deleteContainer("test-container-1")
-	lxdClient.deleteContainer("test-container-2")
+	lxdClient.Init()
+	lxdClient.DeleteContainer("test-container-1")
+	lxdClient.DeleteContainer("test-container-2")
 
-	_, err := lxdClient.createContainer(api.ContainersPost{
+	_, err := lxdClient.CreateContainer(api.ContainersPost{
 		Name:   "test-container-1",
 		Source: source,
 	})
@@ -38,7 +38,7 @@ func (suite *ContainerSuite) SetupSuite() {
 		panic(err)
 	}
 
-	_, err = lxdClient.createContainer(api.ContainersPost{
+	_, err = lxdClient.CreateContainer(api.ContainersPost{
 		Name:   "test-container-3",
 		Source: source,
 	})
@@ -49,13 +49,13 @@ func (suite *ContainerSuite) SetupSuite() {
 }
 
 func (suite *ContainerSuite) TearDownSuite() {
-	lxdClient.deleteContainer("test-container-1")
-	lxdClient.deleteContainer("test-container-2")
-	lxdClient.deleteContainer("test-container-4")
+	lxdClient.DeleteContainer("test-container-1")
+	lxdClient.DeleteContainer("test-container-2")
+	lxdClient.DeleteContainer("test-container-4")
 }
 
 func (suite *ContainerSuite) TestDeleteContainerSuccessful() {
-	op, err := lxdClient.deleteContainer("test-container-3")
+	op, err := lxdClient.DeleteContainer("test-container-3")
 	suite.NoError(err, "They should be no error")
 
 	if suite.NotNil(op, "They should be not nil") {
@@ -64,7 +64,7 @@ func (suite *ContainerSuite) TestDeleteContainerSuccessful() {
 }
 
 func (suite *ContainerSuite) TestDeleteContainerFailed() {
-	_, err := lxdClient.deleteContainer("")
+	_, err := lxdClient.DeleteContainer("")
 	suite.Error(err, "They should be error")
 }
 
@@ -75,7 +75,7 @@ func (suite *ContainerSuite) TestCreateContainerSuccessful() {
 		Source: source,
 	}
 
-	op, err := lxdClient.createContainer(req)
+	op, err := lxdClient.CreateContainer(req)
 	suite.Nil(err, "They should be nil")
 
 	if suite.NotNil(op, "They should be not nil") {
@@ -89,14 +89,14 @@ func (suite *ContainerSuite) TestCreateContainerFailed() {
 		Name: name,
 	}
 
-	op, err := lxdClient.createContainer(req)
+	op, err := lxdClient.CreateContainer(req)
 	suite.Error(err, "They should be error")
 	suite.Nil(op, "They should be nil")
 }
 
 func (suite *ContainerSuite) TestGetContainerSuccessful() {
 	name := "test-container-1"
-	container, err := lxdClient.getContainer(name)
+	container, err := lxdClient.GetContainer(name)
 	suite.NoError(err, "They should be no error")
 	if suite.NotNil(container, "They should be not nil") {
 		suite.Equal(name, container.Name, "They should be equal")
@@ -105,13 +105,13 @@ func (suite *ContainerSuite) TestGetContainerSuccessful() {
 
 func (suite *ContainerSuite) TestGetContainerFailed() {
 	name := "test-container-xyz"
-	container, err := lxdClient.getContainer(name)
+	container, err := lxdClient.GetContainer(name)
 	suite.Error(err, "They should be error")
 	suite.Nil(container, "They should be nil")
 }
 
 func (suite *ContainerSuite) TestGetContainersSuccessful() {
-	containers, err := lxdClient.getContainers()
+	containers, err := lxdClient.GetContainers()
 	suite.NoError(err, "They should be no error")
 	suite.NotEqual(0, len(containers), "They should be not equal")
 }
@@ -122,13 +122,13 @@ func (suite *ContainerSuite) TestGetInfoSuccessful() {
 		Name:   name,
 		Source: source,
 	}
-	result, _ := lxdClient.createContainer(req)
-	op, err := lxdClient.getOperationInfo(result.Get().ID)
+	result, _ := lxdClient.CreateContainer(req)
+	op, err := lxdClient.GetOperationInfo(result.Get().ID)
 	suite.NoError(err, "They should be no error")
 	suite.Equal(result.Get().ID, op.ID, "They should be equal")
 }
 
 func (suite *ContainerSuite) TestGetInfoFailed() {
-	_, err := lxdClient.getOperationInfo("")
+	_, err := lxdClient.GetOperationInfo("")
 	suite.Error(err, "They should be error")
 }
