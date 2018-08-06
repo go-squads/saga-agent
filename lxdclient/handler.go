@@ -21,6 +21,7 @@ type createContainerRequestData struct {
 	Alias    string `json:"alias,omitempty"`
 }
 
+// RequestUpdateStateContainer ...
 type RequestUpdateStateContainer struct {
 	Name  string                `json:"name"`
 	State api.ContainerStatePut `json:"state"`

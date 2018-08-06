@@ -18,21 +18,21 @@ type Client interface {
 
 // LxdClient ...
 type LxdClient struct {
-	client lxd.ContainerServer
+	ContainerServer lxd.ContainerServer
 }
 
 // Init ...
-func (l *LxdClient) Init() {
+func (l LxdClient) Init() {
 	var err error
-	l.client, err = lxd.ConnectLXDUnix("", nil)
+	l.ContainerServer, err = lxd.ConnectLXDUnix("", nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
 // CreateContainer ...
-func (l *LxdClient) CreateContainer(req api.ContainersPost) (op lxd.Operation, err error) {
-	op, err = l.client.CreateContainer(req)
+func (l LxdClient) CreateContainer(req api.ContainersPost) (op lxd.Operation, err error) {
+	op, err = l.ContainerServer.CreateContainer(req)
 	if err != nil {
 		return nil, err
 	}
@@ -40,14 +40,14 @@ func (l *LxdClient) CreateContainer(req api.ContainersPost) (op lxd.Operation, e
 }
 
 // GetContainer ...
-func (l *LxdClient) GetContainer(name string) (container *api.Container, err error) {
-	container, _, err = l.client.GetContainer(name)
+func (l LxdClient) GetContainer(name string) (container *api.Container, err error) {
+	container, _, err = l.ContainerServer.GetContainer(name)
 	return container, err
 }
 
 // DeleteContainer ...
-func (l *LxdClient) DeleteContainer(name string) (op lxd.Operation, err error) {
-	op, err = l.client.DeleteContainer(name)
+func (l LxdClient) DeleteContainer(name string) (op lxd.Operation, err error) {
+	op, err = l.ContainerServer.DeleteContainer(name)
 	if err != nil {
 		return nil, err
 	}
@@ -55,13 +55,13 @@ func (l *LxdClient) DeleteContainer(name string) (op lxd.Operation, err error) {
 }
 
 // GetContainers ...
-func (l *LxdClient) GetContainers() (containers []api.Container, err error) {
-	return l.client.GetContainers()
+func (l LxdClient) GetContainers() (containers []api.Container, err error) {
+	return l.ContainerServer.GetContainers()
 }
 
 // GetOperationInfo ...
-func (l *LxdClient) GetOperationInfo(ID string) (op *api.Operation, err error) {
-	op, _, err = l.client.GetOperation(ID)
+func (l LxdClient) GetOperationInfo(ID string) (op *api.Operation, err error) {
+	op, _, err = l.ContainerServer.GetOperation(ID)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +69,6 @@ func (l *LxdClient) GetOperationInfo(ID string) (op *api.Operation, err error) {
 }
 
 // UpdateContainerState ...
-func (l *LxdClient) UpdateContainerState(name string, state api.ContainerStatePut) (op lxd.Operation, err error) {
-	return l.client.UpdateContainerState(name, state, "")
+func (l LxdClient) UpdateContainerState(name string, state api.ContainerStatePut) (op lxd.Operation, err error) {
+	return l.ContainerServer.UpdateContainerState(name, state, "")
 }
