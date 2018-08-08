@@ -23,7 +23,9 @@ func (a *App) Initialize() {
 	a.Router = mux.NewRouter()
 
 	handler := lxdclient.Handler{}
+	handler.HandlerClient = &lxdclient.LxdClient{}
 	handler.HandlerClient.Init()
+
 	a.Router.HandleFunc("/api/v1/containers", handler.GetContainersHandler).Methods("GET")
 	a.Router.HandleFunc("/api/v1/container/{name}", handler.GetContainerHandler).Methods("GET")
 	a.Router.HandleFunc("/api/v1/container", handler.CreateContainerHandler).Methods("POST")
