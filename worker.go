@@ -89,20 +89,21 @@ func (cw *CronWorker) syncLxcStatus(lxcList []lxc) {
 			v.Status = "stop"
 			cw.updateLxcStateSync(v)
 		case "deleting":
+			cw.deleteLxcSync(v)
 		default:
 			log.Infof("lxc : %s, already synchronized", v.Name)
 		}
 	}
 }
 
-func (cw *CronWorker) createNewLxcSync(newLxc lxc) {
+func (cw *CronWorker) createNewLxcSync(newLxcData lxc) {
 	request := api.ContainersPost{
-		Name: newLxc.Name,
+		Name: newLxcData.Name,
 		Source: api.ContainerSource{
-			Type:     newLxc.Type,
-			Protocol: newLxc.Protocol,
-			Server:   newLxc.Server,
-			Alias:    newLxc.Alias,
+			Type:     newLxcData.Type,
+			Protocol: newLxcData.Protocol,
+			Server:   newLxcData.Server,
+			Alias:    newLxcData.Alias,
 		},
 	}
 
@@ -115,10 +116,10 @@ func (cw *CronWorker) createNewLxcSync(newLxc lxc) {
 		log.Infof(err.Error())
 	}
 
-	log.Infof("Finish creating new container : %s", newLxc.Name)
+	log.Infof("Finish creating new container : %s", newLxcData.Name)
 
-	newLxc.Status = "stopped"
-	cw.requestUpdateLxcStatus(newLxc)
+	newLxcData.Status = "stopped"
+	cw.requestUpdateLxcStatus(newLxcData)
 }
 
 func (cw *CronWorker) updateLxcStateSync(updateLxcData lxc) {
@@ -141,6 +142,21 @@ func (cw *CronWorker) updateLxcStateSync(updateLxcData lxc) {
 	cw.requestUpdateLxcStatus(updateLxcData)
 }
 
+func (cw *CronWorker) deleteLxcSync(deleteLxcData lxc) {
+	op, err := cw.CronClient.DeleteContainer(deleteLxcData.Name)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	if err = op.Wait(); err != nil {
+		log.Infof(err.Error())
+	}
+
+	log.Infof("Finish deleting container : %s", deleteLxcData.Name)
+	cw.requestDeleteLxc(deleteLxcData)
+}
+
 func (cw *CronWorker) requestUpdateLxcStatus(updateLxcData lxc) {
 	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc/" + updateLxcData.ID)
 	payload, err := json.Marshal(updateLxcData)
@@ -157,4 +173,22 @@ func (cw *CronWorker) requestUpdateLxcStatus(updateLxcData lxc) {
 	}
 
 	log.Infof("Success updating lxc %s status to %s", updateLxcData.Name, updateLxcData.Status)
+}
+
+func (cw *CronWorker) requestDeleteLxc(deleteLxcData lxc) {
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc")
+	payload, err := json.Marshal(deleteLxcData)
+	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(payload))
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	_, err = client.Do(req)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	log.Infof("Success deleting lxc %s from database", deleteLxcData.Name)
 }
