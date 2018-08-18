@@ -158,7 +158,7 @@ func (cw *CronWorker) deleteLxcSync(deleteLxcData lxc) {
 }
 
 func (cw *CronWorker) requestUpdateLxcStatus(updateLxcData lxc) {
-	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc/" + updateLxcData.ID)
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc")
 	payload, err := json.Marshal(updateLxcData)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
 
