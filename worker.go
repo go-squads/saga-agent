@@ -83,7 +83,11 @@ func (cw *CronWorker) syncLxcStatus(lxcList []lxc) {
 		case "creating":
 			cw.createNewLxcSync(v)
 		case "starting":
+			v.Status = "start"
+			cw.updateLxcStateSync(v)
 		case "stopping":
+			v.Status = "stop"
+			cw.updateLxcStateSync(v)
 		case "deleting":
 		default:
 			log.Infof("lxc : %s, already synchronized", v.Name)
@@ -107,8 +111,7 @@ func (cw *CronWorker) createNewLxcSync(newLxc lxc) {
 		log.Infof(err.Error())
 	}
 
-	err = op.Wait()
-	if err != nil {
+	if err = op.Wait(); err != nil {
 		log.Infof(err.Error())
 	}
 
@@ -116,6 +119,26 @@ func (cw *CronWorker) createNewLxcSync(newLxc lxc) {
 
 	newLxc.Status = "stopped"
 	cw.requestUpdateLxcStatus(newLxc)
+}
+
+func (cw *CronWorker) updateLxcStateSync(updateLxcData lxc) {
+	request := api.ContainerStatePut{
+		Action:  updateLxcData.Status,
+		Timeout: 60,
+	}
+
+	op, err := cw.CronClient.UpdateContainerState(updateLxcData.Name, request)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	if err = op.Wait(); err != nil {
+		log.Infof(err.Error())
+	}
+
+	log.Infof("Container %s state is now : %s", updateLxcData.Name, updateLxcData.Status)
+	cw.requestUpdateLxcStatus(updateLxcData)
 }
 
 func (cw *CronWorker) requestUpdateLxcStatus(updateLxcData lxc) {
