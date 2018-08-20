@@ -138,8 +138,16 @@ func (cw *CronWorker) updateLxcStateSync(updateLxcData lxc) {
 		log.Infof(err.Error())
 	}
 
+	updateLxcData.Status = cw.changeLxcStateString(updateLxcData.Status)
 	log.Infof("Container %s state is now : %s", updateLxcData.Name, updateLxcData.Status)
 	cw.requestUpdateLxcStatus(updateLxcData)
+}
+
+func (cw *CronWorker) changeLxcStateString(currentState string) string {
+	if currentState == "start" {
+		return "started"
+	}
+	return "stopped"
 }
 
 func (cw *CronWorker) deleteLxcSync(deleteLxcData lxc) {
