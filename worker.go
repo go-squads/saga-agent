@@ -75,6 +75,7 @@ func (cw *CronWorker) doCron() {
 	}
 
 	cw.syncLxcStatus(lxcList)
+
 }
 
 func (cw *CronWorker) syncLxcStatus(lxcList []lxc) {
@@ -107,13 +108,19 @@ func (cw *CronWorker) createNewLxcSync(newLxcData lxc) {
 		},
 	}
 
+	// Add another state: Failed to create
 	op, err := cw.CronClient.CreateContainer(request)
 	if err != nil {
-		log.Infof(err.Error())
+		log.Error("Container can't be cretaed")
+		newLxcData.Status = "Failed to create"
+		cw.requestUpdateLxcStatus(newLxcData)
 	}
 
 	if err = op.Wait(); err != nil {
-		log.Infof(err.Error())
+		log.Errorf("Container creation operation failed")
+		newLxcData.Status = "Failed to create"
+		cw.requestUpdateLxcStatus(newLxcData)
+		return
 	}
 
 	log.Infof("Finish creating new container : %s", newLxcData.Name)
