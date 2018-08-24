@@ -14,6 +14,7 @@ type Client interface {
 	GetContainers() (containers []api.Container, err error)
 	GetOperationInfo(ID string) (op *api.Operation, err error)
 	UpdateContainerState(name string, state api.ContainerStatePut) (op lxd.Operation, err error)
+	GetContainerState(string) (*api.ContainerState, string, error)
 }
 
 // LxdClient ...
@@ -71,4 +72,8 @@ func (l *LxdClient) GetOperationInfo(ID string) (op *api.Operation, err error) {
 // UpdateContainerState ...
 func (l *LxdClient) UpdateContainerState(name string, state api.ContainerStatePut) (op lxd.Operation, err error) {
 	return l.ContainerServer.UpdateContainerState(name, state, "")
+}
+
+func (l *LxdClient) GetContainerState(containerName string) (*api.ContainerState, string, error) {
+	return l.ContainerServer.GetContainerState(containerName)
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,6 +34,18 @@ type lxc struct {
 	Status      string `db:"status" json:"status"`
 	Description string `db:"description" json:"description"`
 }
+
+// Interface for testing
+type HttpClient interface {
+	Do(*http.Request) *http.Response
+	NewRequest(string, string, io.Reader) (*http.Request, error)
+}
+
+type IOHandler interface {
+	ReadAll(io.Reader) ([]byte, error)
+}
+
+// Ends here
 
 func (cw *CronWorker) initialize() {
 	cw.Cron = gocron.NewScheduler()
@@ -74,7 +87,16 @@ func (cw *CronWorker) doCron() {
 		log.Infof(err.Error())
 	}
 
-	cw.syncLxcStatus(lxcList)
+	if len(lxcList) > 0 {
+
+		ip, err := cw.extractLxcIPAddress(lxcList[0])
+		if err != nil {
+			log.Error(err.Error())
+		}
+		log.Infof("IP Address extracted: %s for lxc %s", ip, lxcList[0].Name)
+	}
+
+	// cw.syncLxcStatus(lxcList)
 
 }
 
@@ -206,4 +228,12 @@ func (cw *CronWorker) requestDeleteLxc(deleteLxcData lxc) {
 	}
 
 	log.Infof("Success deleting lxc %s from database", deleteLxcData.Name)
+}
+
+func (cw *CronWorker) extractLxcIPAddress(lxcToCheck lxc) (string, error) {
+	state, _, err := cw.CronClient.GetContainerState(lxcToCheck.Name)
+	if err != nil {
+		return "", err
+	}
+	return state.Network["eth0"].Addresses[0].Address, nil
 }
