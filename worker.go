@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 
 	lxdclient "github.com/go-squads/saga-agent/lxdclient"
@@ -35,6 +36,18 @@ type lxc struct {
 	Description string `db:"description" json:"description"`
 }
 
+type lxcService struct {
+	ID      string `db:"id" json:"id"`
+	Service string `db:"service" json:"service"`
+	LxcID   string `db:"lxc_id" json:"lxc_id"`
+	LxcPort string `db:"lxc_port" json:"lxc_port"`
+	LxdID   string `db:"lxd_id" json:"lxd_id"`
+	LxdPort string `db:"lxd_port" json:"lxd_port"`
+	LxcName string `db:"lxc_name" json:"lxc_name"`
+	Status  string `db:"status" json:"status"`
+	LxdName string `db:"lxd_name" json:"lxd_name"`
+}
+
 // Interface for testing
 type HttpClient interface {
 	Do(*http.Request) *http.Response
@@ -59,45 +72,22 @@ func (cw *CronWorker) startCronJob() {
 func (cw *CronWorker) doCron() {
 	log.Infof("-- Cron Job Running every 5 seconds, sync to LXD : %s --", os.Getenv("LXD_NAME"))
 
-	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxd/" + os.Getenv("LXD_NAME") + "/lxc")
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Infof(err.Error())
-	}
+	// lxcList := cw.requestGetLxcList()
+	lxcServiceList := cw.requestGetLxcServiceList()
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	response, err := client.Do(req)
-
-	if err != nil {
-		log.Infof(err.Error())
-	}
-
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Infof(err.Error())
-	}
-
-	lxcList := []lxc{}
-
-	err = json.Unmarshal(body, &lxcList)
-
-	if err != nil {
-		log.Infof(err.Error())
-	}
-
-	if len(lxcList) > 0 {
-
-		ip, err := cw.extractLxcIPAddress(lxcList[0])
-		if err != nil {
-			log.Error(err.Error())
-		}
-		log.Infof("IP Address extracted: %s for lxc %s", ip, lxcList[0].Name)
-	}
-
+	cw.syncLxcServiceStatus(lxcServiceList)
 	// cw.syncLxcStatus(lxcList)
+}
 
+func (cw *CronWorker) syncLxcServiceStatus(lxcServiceList []lxcService) {
+	for _, v := range lxcServiceList {
+		switch lxcServiceStatus := v.Status; lxcServiceStatus {
+		case "creating":
+			cw.createForwardPort(v)
+		default:
+			log.Infof("lxc : %s, already synchronized", v.LxcName)
+		}
+	}
 }
 
 func (cw *CronWorker) syncLxcStatus(lxcList []lxc) {
@@ -130,7 +120,6 @@ func (cw *CronWorker) createNewLxcSync(newLxcData lxc) {
 		},
 	}
 
-	// Add another state: Failed to create
 	op, err := cw.CronClient.CreateContainer(request)
 	if err != nil {
 		log.Error("Container can't be cretaed")
@@ -230,10 +219,109 @@ func (cw *CronWorker) requestDeleteLxc(deleteLxcData lxc) {
 	log.Infof("Success deleting lxc %s from database", deleteLxcData.Name)
 }
 
-func (cw *CronWorker) extractLxcIPAddress(lxcToCheck lxc) (string, error) {
-	state, _, err := cw.CronClient.GetContainerState(lxcToCheck.Name)
+func (cw *CronWorker) extractLxcIPAddress(lxcToCheck lxcService) (string, error) {
+	state, _, err := cw.CronClient.GetContainerState(lxcToCheck.LxcName)
 	if err != nil {
 		return "", err
 	}
 	return state.Network["eth0"].Addresses[0].Address, nil
+}
+
+func (cw *CronWorker) requestGetLxcServiceList() []lxcService {
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc-services/" + os.Getenv("LXD_NAME"))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Do(req)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	lxcServiceList := []lxcService{}
+
+	err = json.Unmarshal(body, &lxcServiceList)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+	return lxcServiceList
+}
+
+func (cw *CronWorker) requestGetLxcList() []lxc {
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxd/" + os.Getenv("LXD_NAME") + "/lxc")
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Do(req)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	lxcList := []lxc{}
+
+	err = json.Unmarshal(body, &lxcList)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+	return lxcList
+}
+
+func (cw *CronWorker) requestUpdateLxcServiceStatus(l lxcService) {
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc-service")
+	payload, err := json.Marshal(l)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	_, err = client.Do(req)
+
+	if err != nil {
+		log.Infof(err.Error())
+	}
+
+	log.Infof("Success updating lxc_service %s status to %s", l.LxcName, l.Status)
+}
+
+func (cw *CronWorker) createForwardPort(l lxcService) {
+	lxcIP, err := cw.extractLxcIPAddress(l)
+
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+	lxdIP := "172.28.128.6"
+	iptableCmd := fmt.Sprintf("sudo -t nat -I PREROUTING -i enp0s8 -p TCP -d %s --dport %s -j DNAT --to-destination %s:%s -m comment --comment 'forward to the Nginx container'", lxdIP, l.LxdPort, lxcIP, l.LxcPort)
+	err = exec.Command("/bin/bash", "-c", iptableCmd).Run()
+	if err != nil {
+		log.Info("PORT FORWARD ERROR")
+		l.Status = "Failed to create"
+	}
+	l.Status = "created"
+	cw.requestUpdateLxcServiceStatus(l)
+	log.Infof("SUCCESS FORWARDING PORT FROM %s IN HOST, TO %s IN LXC %s", l.LxdPort, l.LxcPort, l.LxcName)
 }
