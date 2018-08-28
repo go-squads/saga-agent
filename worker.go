@@ -37,15 +37,16 @@ type lxc struct {
 }
 
 type lxcService struct {
-	ID      string `db:"id" json:"id"`
-	Service string `db:"service" json:"service"`
-	LxcID   string `db:"lxc_id" json:"lxc_id"`
-	LxcPort string `db:"lxc_port" json:"lxc_port"`
-	LxdID   string `db:"lxd_id" json:"lxd_id"`
-	LxdPort string `db:"lxd_port" json:"lxd_port"`
-	LxcName string `db:"lxc_name" json:"lxc_name"`
-	Status  string `db:"status" json:"status"`
-	LxdName string `db:"lxd_name" json:"lxd_name"`
+	ID         string `db:"id" json:"id"`
+	Service    string `db:"service" json:"service"`
+	LxcID      string `db:"lxc_id" json:"lxc_id"`
+	LxcPort    string `db:"lxc_port" json:"lxc_port"`
+	LxdID      string `db:"lxd_id" json:"lxd_id"`
+	LxdPort    string `db:"lxd_port" json:"lxd_port"`
+	LxcName    string `db:"lxc_name" json:"lxc_name"`
+	Status     string `db:"status" json:"status"`
+	LxdName    string `db:"lxd_name" json:"lxd_name"`
+	LxdAddress string `db:"lxd_address" json:"lxd_address"`
 }
 
 // Interface for testing
@@ -72,11 +73,11 @@ func (cw *CronWorker) startCronJob() {
 func (cw *CronWorker) doCron() {
 	log.Infof("-- Cron Job Running every 5 seconds, sync to LXD : %s --", os.Getenv("LXD_NAME"))
 
-	// lxcList := cw.requestGetLxcList()
+	lxcList := cw.requestGetLxcList()
 	lxcServiceList := cw.requestGetLxcServiceList()
 
 	cw.syncLxcServiceStatus(lxcServiceList)
-	// cw.syncLxcStatus(lxcList)
+	cw.syncLxcStatus(lxcList)
 }
 
 func (cw *CronWorker) syncLxcServiceStatus(lxcServiceList []lxcService) {
@@ -85,7 +86,7 @@ func (cw *CronWorker) syncLxcServiceStatus(lxcServiceList []lxcService) {
 		case "creating":
 			cw.createForwardPort(v)
 		default:
-			log.Infof("lxc : %s, already synchronized", v.LxcName)
+			log.Infof("lxc : %s, already synchronized in lxcServiceStatus", v.Service)
 		}
 	}
 }
@@ -104,7 +105,7 @@ func (cw *CronWorker) syncLxcStatus(lxcList []lxc) {
 		case "deleting":
 			cw.deleteLxcSync(v)
 		default:
-			log.Infof("lxc : %s, already synchronized", v.Name)
+			log.Infof("lxc : %s, already synchronized in syncLxcStatus", v.Name)
 		}
 	}
 }
@@ -290,7 +291,7 @@ func (cw *CronWorker) requestGetLxcList() []lxc {
 }
 
 func (cw *CronWorker) requestUpdateLxcServiceStatus(l lxcService) {
-	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc-service")
+	url := fmt.Sprintf(os.Getenv("SCHEDULER_URL") + "/lxc-services")
 	payload, err := json.Marshal(l)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(payload))
 
@@ -314,8 +315,7 @@ func (cw *CronWorker) createForwardPort(l lxcService) {
 		log.Error(err.Error())
 	}
 
-	lxdIP := "172.28.128.6"
-	iptableCmd := fmt.Sprintf("sudo -t nat -I PREROUTING -i enp0s8 -p TCP -d %s --dport %s -j DNAT --to-destination %s:%s -m comment --comment 'forward to the Nginx container'", lxdIP, l.LxdPort, lxcIP, l.LxcPort)
+	iptableCmd := fmt.Sprintf("sudo iptables -t nat -I PREROUTING -i enp0s8 -p TCP -d %s --dport %s -j DNAT --to-destination %s:%s -m comment --comment 'forward to the Nginx container'", l.LxdAddress, l.LxdPort, lxcIP, l.LxcPort)
 	err = exec.Command("/bin/bash", "-c", iptableCmd).Run()
 	if err != nil {
 		log.Info("PORT FORWARD ERROR")
