@@ -315,7 +315,7 @@ func (cw *CronWorker) createForwardPort(l lxcService) {
 		log.Error(err.Error())
 	}
 
-	iptableCmd := fmt.Sprintf("sudo iptables -t nat -I PREROUTING -i enp0s8 -p TCP -d %s --dport %s -j DNAT --to-destination %s:%s -m comment --comment 'forward to the Nginx container'", l.LxdAddress, l.LxdPort, lxcIP, l.LxcPort)
+	iptableCmd := fmt.Sprintf("sudo iptables -t nat -I PREROUTING -i enp0s8 -p TCP -d %s --dport %s -j DNAT --to-destination %s:%s -m comment --comment 'forward to the %s service'", l.LxdAddress, l.LxdPort, lxcIP, l.LxcPort, l.Service)
 	err = exec.Command("/bin/bash", "-c", iptableCmd).Run()
 	if err != nil {
 		log.Info("PORT FORWARD ERROR")
