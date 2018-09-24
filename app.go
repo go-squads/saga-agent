@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/go-squads/saga-agent/lxdclient"
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 // App ...
@@ -16,6 +18,11 @@ func (a *App) Run() {
 
 // Initialize ...
 func (a *App) Initialize() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic("Load env failed")
+		panic(err)
+	}
 	worker := CronWorker{}
 	worker.CronClient = &lxdclient.LxdClient{}
 	worker.CronClient.Init()
